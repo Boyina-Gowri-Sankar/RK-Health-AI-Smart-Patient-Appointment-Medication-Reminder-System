@@ -1,0 +1,72 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Read credentials
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
+
+print("=" * 50)
+print("RK Health Environment Configuration")
+print("=" * 50)
+
+config = {
+    "Groq API Key": GROQ_API_KEY,
+    "Twilio Account SID": TWILIO_ACCOUNT_SID,
+    "Twilio Auth Token": TWILIO_AUTH_TOKEN,
+    "Twilio Phone Number": TWILIO_PHONE_NUMBER,
+    "Google Sheet ID": GOOGLE_SHEET_ID,
+}
+
+all_ok = True
+
+for name, value in config.items():
+    if value:
+        print(f"[✓] {name} Loaded")
+    else:
+        print(f"[✗] {name} Missing")
+        all_ok = False
+
+print("-" * 50)
+
+if all_ok:
+    print("Environment setup completed successfully.")
+else:
+    print("Some configuration values are missing.")
+    print("Please update your .env file.")
+
+print("=" * 50)
+
+# Create a .env file in the same folder:
+
+        GROQ_API_KEY=gsk_your_groq_api_key
+        TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxx
+        TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxx
+        TWILIO_PHONE_NUMBER=+1234567890
+        GOOGLE_SHEET_ID=your_google_sheet_id
+
+# Install the required package:
+
+               pip install python-dotenv
+ 
+# Run the script:
+
+                python setup.py
+
+# This verifies that all required environment variables are configured correctly. The actual creation of Google accounts, Google Apps Script projects, Twilio accounts, and Groq API keys cannot be automated by a standalone Python script because those are account-creation and cloud-configuration tasks that must be performed through the providers' websites or official APIs after authentication.
+
+
+
+
+
+
+
+
+
+
+

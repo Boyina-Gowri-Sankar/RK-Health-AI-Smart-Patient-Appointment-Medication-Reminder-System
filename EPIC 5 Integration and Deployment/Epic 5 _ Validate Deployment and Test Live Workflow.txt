@@ -1,0 +1,89 @@
+// ===============================
+// RK Health End-to-End Testing
+// ===============================
+
+const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
+
+// Test Add Appointment
+async function testAddAppointment() {
+
+    const response = await fetch(
+        SCRIPT_URL + "?" + new URLSearchParams({
+            action: "add",
+            patient: "John Doe",
+            doctor: "Dr. Smith",
+            date: "2026-08-01",
+            time: "10:00",
+            medication: "Paracetamol",
+            phone: "+911234567890",
+            notes: "Routine Checkup"
+        })
+    );
+
+    const result = await response.json();
+    console.log("Add Appointment:", result);
+}
+
+// Test Get Records
+async function testGetLogs() {
+
+    const response = await fetch(SCRIPT_URL + "?action=get");
+    const result = await response.json();
+
+    console.log("Patient Records:", result);
+}
+
+// Test Dashboard Statistics
+async function testStats() {
+
+    const response = await fetch(SCRIPT_URL + "?action=stats");
+    const result = await response.json();
+
+    console.log("Dashboard Stats:", result);
+}
+
+// Test AI Summary
+async function testSummary() {
+
+    const response = await fetch(SCRIPT_URL + "?action=summary");
+    const result = await response.json();
+
+    console.log("AI Summary:", result);
+}
+
+// Test SMS Reminder
+async function testSMS() {
+
+    const response = await fetch(SCRIPT_URL + "?action=sms");
+    const result = await response.json();
+
+    console.log("SMS:", result);
+}
+
+// Test Health Report
+async function testReport() {
+
+    const response = await fetch(SCRIPT_URL + "?action=report");
+    const result = await response.json();
+
+    console.log("Health Report:", result);
+}
+
+// Run All Tests
+async function runTests() {
+
+    console.log("Running RK Health Tests...\n");
+
+    await testAddAppointment();
+    await testGetLogs();
+    await testStats();
+    await testSummary();
+    await testSMS();
+    await testReport();
+
+    console.log("\nAll Tests Completed Successfully.");
+
+}
+
+// Execute Tests
+runTests();

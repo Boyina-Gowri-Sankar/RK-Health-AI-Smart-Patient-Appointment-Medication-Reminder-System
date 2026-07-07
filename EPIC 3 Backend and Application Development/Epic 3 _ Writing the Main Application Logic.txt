@@ -1,0 +1,94 @@
+// Replace with your Google Sheet ID
+const SHEET_ID = "YOUR_SHEET_ID";
+
+// Main request handler
+function doGet(e) {
+  const action = e.parameter.action;
+
+  switch (action) {
+    case "add": return addLog(e.parameter);
+    case "get": return getLogs();
+    case "stats": return getStats();
+    default: return jsonResponse({success:false, message:"Invalid Action"});
+  }
+}
+
+// Add patient record
+function addLog(data) {
+  if (!data.patient || !data.date || !data.phone)
+    return jsonResponse({success:false, message:"Missing required fields"});
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Appointments");
+
+  sheet.appendRow([
+    new Date(),
+    data.patient,
+    data.doctor,
+    data.date,
+    data.time,
+    data.medication,
+    data.phone,
+    data.notes
+  ]);
+
+  return jsonResponse({success:true, message:"Record Added"});
+}
+
+// Get all records
+function getLogs() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Appointments");
+  const data = sheet.getDataRange().getValues();
+  return jsonResponse({success:true, records:data});
+}
+
+// Update a record
+function updateLog(row, data) {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Appointments");
+  sheet.getRange(row,2,1,7).setValues([[
+    data.patient,
+    data.doctor,
+    data.date,
+    data.time,
+    data.medication,
+    data.phone,
+    data.notes
+  ]]);
+}
+
+// Delete a record
+function deleteLog(row) {
+  SpreadsheetApp.openById(SHEET_ID)
+    .getSheetByName("Appointments")
+    .deleteRow(row);
+}
+
+// Dashboard statistics
+function getStats() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Appointments");
+  const total = sheet.getLastRow() - 1;
+  return jsonResponse({success:true, appointments:total});
+}
+
+// AI Summary (Simple Placeholder)
+function generateSummary(notes) {
+  return "Summary: " + notes;
+}
+
+// SMS (Placeholder)
+function sendSMS(phone, message) {
+  Logger.log("SMS to " + phone + ": " + message);
+  return "SMS Sent";
+}
+
+// Run complete workflow
+function runOnce() {
+  const summary = generateSummary("Patient is recovering well.");
+  sendSMS("+911234567890", "Take your medicine at 8 PM.");
+}
+
+// JSON Response Helper
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}

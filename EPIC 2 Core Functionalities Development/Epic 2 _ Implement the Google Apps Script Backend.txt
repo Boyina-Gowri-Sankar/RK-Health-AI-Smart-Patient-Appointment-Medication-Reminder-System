@@ -1,0 +1,444 @@
+/******************************************************************
+ RK Health Backend
+ Google Apps Script
+******************************************************************/
+
+//==============================
+// CONFIGURATION
+//==============================
+
+const SHEET_ID = "YOUR_GOOGLE_SHEET_ID";
+
+const APPOINTMENT_SHEET = "Appointments";
+const MEDICATION_SHEET = "Medications";
+const SUMMARY_SHEET = "Summaries";
+
+const GROQ_API_KEY = "YOUR_GROQ_API_KEY";
+
+const TWILIO_SID = "YOUR_TWILIO_ACCOUNT_SID";
+const TWILIO_TOKEN = "YOUR_TWILIO_AUTH_TOKEN";
+const TWILIO_NUMBER = "+1234567890";
+
+
+//==============================
+// WEB APP ENTRY
+//==============================
+
+function doGet(e){
+
+  let action = e.parameter.action;
+
+  switch(action){
+
+    case "logs":
+      return getLogs();
+
+    case "stats":
+      return getStats();
+
+    default:
+      return ContentService
+      .createTextOutput("RK Health Backend Running")
+      .setMimeType(ContentService.MimeType.TEXT);
+
+  }
+
+}
+
+
+//=====================================================
+// ADD APPOINTMENT
+//=====================================================
+
+function addLog(data){
+
+  validateInput(data);
+
+  const sheet =
+  SpreadsheetApp
+  .openById(SHEET_ID)
+  .getSheetByName(APPOINTMENT_SHEET);
+
+  sheet.appendRow([
+
+    new Date(),
+
+    data.patient,
+
+    data.doctor,
+
+    data.date,
+
+    data.time,
+
+    data.phone,
+
+    data.medication,
+
+    data.notes,
+
+    "Pending"
+
+  ]);
+
+  return {
+
+    success:true
+
+  };
+
+}
+
+
+
+//=====================================================
+// GET RECORDS
+//=====================================================
+
+function getLogs(){
+
+  const sheet =
+  SpreadsheetApp
+  .openById(SHEET_ID)
+  .getSheetByName(APPOINTMENT_SHEET);
+
+  return sheet
+  .getDataRange()
+  .getValues();
+
+}
+
+
+
+//=====================================================
+// UPDATE
+//=====================================================
+
+function updateLog(row,data){
+
+  const sheet =
+  SpreadsheetApp
+  .openById(SHEET_ID)
+  .getSheetByName(APPOINTMENT_SHEET);
+
+  sheet.getRange(row,2).setValue(data.patient);
+  sheet.getRange(row,3).setValue(data.doctor);
+  sheet.getRange(row,4).setValue(data.date);
+  sheet.getRange(row,5).setValue(data.time);
+  sheet.getRange(row,6).setValue(data.phone);
+  sheet.getRange(row,7).setValue(data.medication);
+  sheet.getRange(row,8).setValue(data.notes);
+
+}
+
+
+
+//=====================================================
+// DELETE
+//=====================================================
+
+function deleteLog(row){
+
+  SpreadsheetApp
+  .openById(SHEET_ID)
+  .getSheetByName(APPOINTMENT_SHEET)
+  .deleteRow(row);
+
+}
+
+
+
+//=====================================================
+// DASHBOARD STATS
+//=====================================================
+
+function getStats(){
+
+  const sheet =
+  SpreadsheetApp
+  .openById(SHEET_ID)
+  .getSheetByName(APPOINTMENT_SHEET);
+
+  let values =
+  sheet.getDataRange().getValues();
+
+  return {
+
+    appointments: values.length-1
+
+  };
+
+}
+
+
+
+//=====================================================
+// INPUT VALIDATION
+//=====================================================
+
+function validateInput(data){
+
+  if(!data.patient)
+    throw "Patient required";
+
+  if(!data.doctor)
+    throw "Doctor required";
+
+  if(!data.date)
+    throw "Appointment date required";
+
+  if(!data.time)
+    throw "Appointment time required";
+
+  if(!data.phone)
+    throw "Phone required";
+
+  if(!/^\+?[0-9]{10,15}$/.test(data.phone))
+    throw "Invalid phone number";
+
+  if(!data.medication)
+    throw "Medication required";
+
+}
+
+
+
+//=====================================================
+// AI SUMMARY (Groq)
+//=====================================================
+
+function generateSummary(data){
+
+  const prompt =
+`
+Patient : ${data.patient}
+
+Doctor : ${data.doctor}
+
+Appointment
+
+${data.date}
+${data.time}
+
+Visit Notes
+
+${data.notes}
+
+Generate a patient-friendly summary.
+
+Include
+
+Visit overview
+
+Recommendations
+
+Follow-up guidance
+
+Medication advice
+`;
+
+  const payload = {
+
+    model:"llama-3.3-70b-versatile",
+
+    messages:[
+      {
+        role:"user",
+        content:prompt
+      }
+    ]
+
+  };
+
+  const options = {
+
+    method:"post",
+
+    contentType:"application/json",
+
+    headers:{
+
+      Authorization:"Bearer "+GROQ_API_KEY
+
+    },
+
+    payload:JSON.stringify(payload)
+
+  };
+
+  const response =
+  UrlFetchApp.fetch(
+
+    "https://api.groq.com/openai/v1/chat/completions",
+
+    options
+
+  );
+
+  const json =
+  JSON.parse(response.getContentText());
+
+  const summary =
+  json.choices[0].message.content;
+
+  SpreadsheetApp
+  .openById(SHEET_ID)
+  .getSheetByName(SUMMARY_SHEET)
+  .appendRow([
+
+    new Date(),
+
+    data.patient,
+
+    summary
+
+  ]);
+
+  return summary;
+
+}
+
+
+
+//=====================================================
+// TWILIO SMS
+//=====================================================
+
+function sendSMS(phone,message){
+
+  phone =
+  phone.replace(/\s/g,"");
+
+  const url =
+  "https://api.twilio.com/2010-04-01/Accounts/"
+  +TWILIO_SID+
+  "/Messages.json";
+
+  const payload={
+
+    To:phone,
+
+    From:TWILIO_NUMBER,
+
+    Body:message
+
+  };
+
+  const options={
+
+    method:"post",
+
+    payload:payload,
+
+    headers:{
+
+      Authorization:
+      "Basic "+
+      Utilities.base64Encode(
+      TWILIO_SID+":"+TWILIO_TOKEN)
+
+    }
+
+  };
+
+  let response =
+  UrlFetchApp.fetch(url,options);
+
+  return response.getContentText();
+
+}
+
+
+
+//=====================================================
+// GOOGLE CALENDAR LINK
+//=====================================================
+
+function getCalendarLink(data){
+
+  const start =
+  Utilities.formatDate(
+  new Date(data.date+" "+data.time),
+
+  Session.getScriptTimeZone(),
+
+  "yyyyMMdd'T'HHmmss");
+
+  const end =
+  Utilities.formatDate(
+  new Date(
+  new Date(data.date+" "+data.time)
+  .getTime()+3600000),
+
+  Session.getScriptTimeZone(),
+
+  "yyyyMMdd'T'HHmmss");
+
+  const title =
+  encodeURIComponent(
+  "Doctor Appointment");
+
+  const details =
+  encodeURIComponent(data.notes);
+
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE"
+  +"&text="+title
+  +"&dates="+start+"/"+end
+  +"&details="+details;
+
+}
+
+
+
+//=====================================================
+// RUN WHOLE WORKFLOW
+//=====================================================
+
+function runOnce(){
+
+  const logs=getLogs();
+
+  for(let i=1;i<logs.length;i++){
+
+      const row=logs[i];
+
+      let patient=row[1];
+      let doctor=row[2];
+      let date=row[3];
+      let time=row[4];
+      let phone=row[5];
+      let medication=row[6];
+      let notes=row[7];
+
+      const summary=
+      generateSummary({
+
+        patient,
+
+        doctor,
+
+        date,
+
+        time,
+
+        phone,
+
+        medication,
+
+        notes
+
+      });
+
+      sendSMS(
+
+        phone,
+
+        "Reminder: "+patient+
+        ", don't forget your appointment on "+
+        date+" at "+time
+
+      );
+
+  }
+
+}

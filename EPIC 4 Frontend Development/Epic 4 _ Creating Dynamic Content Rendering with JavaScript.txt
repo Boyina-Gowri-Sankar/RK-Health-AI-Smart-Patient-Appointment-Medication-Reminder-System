@@ -1,0 +1,126 @@
+// Backend URL (Google Apps Script Web App)
+const API_URL = "YOUR_WEB_APP_URL";
+
+// Add Appointment
+document.getElementById("appointmentForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const btn = document.getElementById("saveBtn");
+    btn.disabled = true;
+    btn.innerText = "Saving...";
+
+    const data = {
+        action: "add",
+        patient: document.getElementById("patient").value,
+        doctor: document.getElementById("doctor").value,
+        date: document.getElementById("date").value,
+        medication: document.getElementById("medicine").value,
+        phone: document.getElementById("phone").value,
+        notes: document.getElementById("notes").value
+    };
+
+    try {
+        const response = await fetch(API_URL + "?" + new URLSearchParams(data));
+        const result = await response.json();
+
+        alert(result.message);
+
+        document.getElementById("appointmentForm").reset();
+        loadLogs();
+        loadStats();
+
+    } catch (error) {
+        alert("Error saving record.");
+    }
+
+    btn.disabled = false;
+    btn.innerText = "Save";
+});
+
+
+// Load Records
+async function loadLogs() {
+
+    const response = await fetch(API_URL + "?action=get");
+    const result = await response.json();
+
+    const table = document.getElementById("logs");
+    table.innerHTML = "";
+
+    result.records.forEach(row => {
+        table.innerHTML += `
+            <tr>
+                <td>${row[1]}</td>
+                <td>${row[2]}</td>
+                <td>${row[3]}</td>
+                <td>${row[6]}</td>
+            </tr>`;
+    });
+
+}
+
+
+// Dashboard Statistics
+async function loadStats() {
+
+    const response = await fetch(API_URL + "?action=stats");
+    const result = await response.json();
+
+    document.getElementById("appointments").innerText =
+        result.appointments;
+
+}
+
+
+// Generate AI Summary
+async function generateSummary() {
+
+    document.getElementById("summary").innerHTML = "Generating...";
+
+    const response = await fetch(API_URL + "?action=summary");
+    const result = await response.json();
+
+    document.getElementById("summary").innerHTML =
+        result.summary;
+
+}
+
+
+// Send SMS Reminder
+async function sendSMS() {
+
+    const response = await fetch(API_URL + "?action=sms");
+    const result = await response.json();
+
+    alert(result.message);
+
+}
+
+
+// Generate Report
+async function generateReport() {
+
+    const response = await fetch(API_URL + "?action=report");
+    const result = await response.json();
+
+    document.getElementById("report").innerHTML =
+        result.report;
+
+}
+
+
+// Open Modal
+function openModal() {
+    document.getElementById("modal").style.display = "block";
+}
+
+// Close Modal
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
+}
+
+// Load dashboard on startup
+window.onload = function () {
+    loadLogs();
+    loadStats();
+};

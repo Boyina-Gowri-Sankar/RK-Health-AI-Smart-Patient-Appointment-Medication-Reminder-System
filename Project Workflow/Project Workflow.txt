@@ -1,0 +1,340 @@
+from flask import Flask, request, jsonify
+import sqlite3
+from datetime import datetime
+
+app = Flask(__name__)
+DB = "rk_health.db"
+
+
+# -----------------------------
+# Database Initialization
+# -----------------------------
+def init_db():
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS appointments(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient TEXT,
+        doctor TEXT,
+        date TEXT,
+        time TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS medications(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient TEXT,
+        medicine TEXT,
+        dosage TEXT,
+        reminder TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS health_logs(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient TEXT,
+        weight REAL,
+        bp TEXT,
+        notes TEXT,
+        created TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+# -----------------------------
+# Home
+# -----------------------------
+@app.route("/")
+def home():
+    return jsonify({
+        "project": "RK Health",
+        "status": "Running Successfully",
+        "version": "1.0"
+    })
+
+
+# -----------------------------
+# Appointment APIs
+# -----------------------------
+@app.route("/appointments", methods=["GET"])
+def get_appointments():
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM appointments")
+
+    data = cur.fetchall()
+
+    conn.close()
+
+    result = []
+
+    for row in data:
+        result.append({
+            "id": row[0],
+            "patient": row[1],
+            "doctor": row[2],
+            "date": row[3],
+            "time": row[4]
+        })
+
+    return jsonify(result)
+
+
+@app.route("/appointments", methods=["POST"])
+def add_appointment():
+
+    data = request.json
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("""
+    INSERT INTO appointments(patient,doctor,date,time)
+    VALUES(?,?,?,?)
+    """, (
+        data["patient"],
+        data["doctor"],
+        data["date"],
+        data["time"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "message": "Appointment Added Successfully"
+    })
+
+
+@app.route("/appointments/<int:id>", methods=["DELETE"])
+def delete_appointment(id):
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM appointments WHERE id=?", (id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "message": "Appointment Deleted"
+    })
+
+
+# -----------------------------
+# Medication APIs
+# -----------------------------
+@app.route("/medications", methods=["GET"])
+def medications():
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM medications")
+
+    rows = cur.fetchall()
+
+    conn.close()
+
+    result = []
+
+    for r in rows:
+        result.append({
+            "id": r[0],
+            "patient": r[1],
+            "medicine": r[2],
+            "dosage": r[3],
+            "reminder": r[4]
+        })
+
+    return jsonify(result)
+
+
+@app.route("/medications", methods=["POST"])
+def add_medication():
+
+    data = request.json
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("""
+    INSERT INTO medications(patient,medicine,dosage,reminder)
+    VALUES(?,?,?,?)
+    """, (
+        data["patient"],
+        data["medicine"],
+        data["dosage"],
+        data["reminder"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "message": "Medication Saved"
+    })
+
+
+# -----------------------------
+# Health Log APIs
+# -----------------------------
+@app.route("/healthlog", methods=["POST"])
+def add_log():
+
+    data = request.json
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("""
+    INSERT INTO health_logs(patient,weight,bp,notes,created)
+    VALUES(?,?,?,?,?)
+    """, (
+        data["patient"],
+        data["weight"],
+        data["bp"],
+        data["notes"],
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "message": "Health Log Saved"
+    })
+
+
+@app.route("/healthlog", methods=["GET"])
+def get_logs():
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM health_logs")
+
+    rows = cur.fetchall()
+
+    conn.close()
+
+    result = []
+
+    for r in rows:
+        result.append({
+            "id": r[0],
+            "patient": r[1],
+            "weight": r[2],
+            "bp": r[3],
+            "notes": r[4],
+            "created": r[5]
+        })
+
+    return jsonify(result)
+
+
+# -----------------------------
+# AI Summary (Demo)
+# -----------------------------
+@app.route("/summary/<patient>")
+def summary(patient):
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("""
+    SELECT notes
+    FROM health_logs
+    WHERE patient=?
+    """, (patient,))
+
+    rows = cur.fetchall()
+
+    conn.close()
+
+    if len(rows) == 0:
+        return jsonify({
+            "summary": "No records found."
+        })
+
+    text = ""
+
+    for row in rows:
+        text += row[0] + ". "
+
+    return jsonify({
+        "patient": patient,
+        "summary": "AI Summary: " + text
+    })
+
+
+# -----------------------------
+# Dashboard
+# -----------------------------
+@app.route("/dashboard")
+def dashboard():
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM appointments")
+    appointments = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM medications")
+    medicines = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM health_logs")
+    logs = cur.fetchone()[0]
+
+    conn.close()
+
+    return jsonify({
+        "appointments": appointments,
+        "medications": medicines,
+        "health_logs": logs
+    })
+
+
+# -----------------------------
+# Main
+# -----------------------------
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+# Install Flask
+          pip install flask
+
+The server will start at:
+
+          http://127.0.0.1:5000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

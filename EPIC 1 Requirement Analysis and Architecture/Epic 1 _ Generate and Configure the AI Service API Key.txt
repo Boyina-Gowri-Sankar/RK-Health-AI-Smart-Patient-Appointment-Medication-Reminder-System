@@ -1,0 +1,97 @@
+# Groq API Key Setup
+
+# Before the application can communicate with the Groq Large Language Model (LLM), you need to create a Groq API key and configure it securely in your project.
+
+# Step 1: Create a Groq Account
+
+Visit https://console.groq.com and sign up using your Google account, GitHub account, or email address.
+
+# (Screenshot 1: Groq Login Page)
+
+# Step 2: Navigate to API Keys
+
+# After logging in, click API Keys from the navigation bar or open the API Keys page from your dashboard.
+
+# (Screenshot 2: Groq Dashboard)
+
+# (Screenshot 3: API Keys Page)
+
+# Step 3: Create a New API Key
+
+# Click the Create API Key button.
+
+# Provide:
+
+Display Name: RK-Health-Key
+Expiration: Leave as No Expiration (or choose any desired expiry)
+
+# Then click Submit.
+
+# (Screenshot 4: Create API Key Dialog)
+
+# Step 4: Copy the API Key
+
+# Groq will generate a secret API key.
+
+           Example:
+
+                      gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Important: Copy and save the key immediately. Once the dialog is closed, the key cannot be viewed again.
+
+# Step 5: Create a .env File
+
+# In the root directory of your project, create a file named:
+
+                                                                .env
+
+         Add the following:
+
+                                                  GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Step 6: Install Required Packages
+
+# Install the required Python libraries:
+
+                                           pip install groq python-dotenv
+# Step 7: Load the API Key in Python
+
+
+
+
+
+# Run the following code 
+
+import os
+from dotenv import load_dotenv
+from groq import Groq
+
+load_dotenv()
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
+Step 8: Test the Connection
+from groq import Groq
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+response = client.chat.completions.create(
+    model="llama3-8b-8192",
+    messages=[
+        {
+            "role": "user",
+            "content": "Hello!"
+        }
+    ]
+)
+
+print(response.choices[0].message.content)
+
+# If everything is configured correctly, the model will return a response similar to:
+
+                               Hello! How can I help you today?

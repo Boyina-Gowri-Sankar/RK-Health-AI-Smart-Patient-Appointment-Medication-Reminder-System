@@ -1,0 +1,93 @@
+// ==========================================
+// RK Health Deployment Configuration
+// ==========================================
+
+// Google Apps Script Web App URL
+const SCRIPT_URL =
+"https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+
+// GitHub Pages URL
+const WEBSITE_URL =
+"https://username.github.io/rk-health/";
+
+// API Endpoints
+const API = {
+
+    addLog: SCRIPT_URL + "?action=add",
+
+    getLogs: SCRIPT_URL + "?action=get",
+
+    updateLog: SCRIPT_URL + "?action=update",
+
+    deleteLog: SCRIPT_URL + "?action=delete",
+
+    getStats: SCRIPT_URL + "?action=stats",
+
+    generateSummary: SCRIPT_URL + "?action=summary",
+
+    sendSMS: SCRIPT_URL + "?action=sms",
+
+    generateReport: SCRIPT_URL + "?action=report"
+
+};
+
+// Example: Load Dashboard Statistics
+
+async function loadStats() {
+
+    try {
+
+        const response = await fetch(API.getStats);
+        const data = await response.json();
+
+        document.getElementById("appointments").innerText =
+            data.appointments;
+
+    } catch (error) {
+
+        console.error("Error:", error);
+
+    }
+
+}
+
+
+// Example: Load Patient Logs
+
+async function loadLogs() {
+
+    try {
+
+        const response = await fetch(API.getLogs);
+        const data = await response.json();
+
+        console.log(data.records);
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+// Load data when page opens
+window.onload = function () {
+
+    loadStats();
+    loadLogs();
+
+};
+
+# Google Apps Script Deployment
+Open your Apps Script project.
+Click Deploy → New Deployment.
+Select Web App.
+Configure:
+Execute as: Me
+Who has access: Anyone
+Click Deploy.
+Copy the generated Web App URL, for example:
+https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxx/exec
+Replace YOUR_SCRIPT_ID in config.js with your actual deployment URL.

@@ -1,0 +1,89 @@
+import os
+
+PROJECT_NAME = "RK-Health"
+
+folders = [
+    "apps-script",
+    "docs",
+    "src",
+    "templates",
+    "static",
+    "static/css",
+    "static/js"
+]
+
+files = {
+    "apps-script/Code.gs": "// Google Apps Script Backend\n",
+    "docs/MASTER_PLAN.md": "# RK Health Project\n",
+    "src/sheets.js": "// Google Sheets Functions\n",
+    "templates/index.html": "<!DOCTYPE html>\n<html>\n<head><title>RK Health</title></head>\n<body>\n<h1>RK Health</h1>\n</body>\n</html>",
+    "static/css/style.css": "body{font-family:Arial;}",
+    "static/js/script.js": "// JavaScript",
+    "README.md": "# RK Health",
+    "requirements.txt":
+"""Flask==3.0.3
+groq==0.11.0
+python-dotenv==1.0.1
+""",
+    ".env":
+"""GROQ_API_KEY=your_groq_api_key_here
+TWILIO_ACCOUNT_SID=your_sid
+TWILIO_AUTH_TOKEN=your_token
+TWILIO_PHONE_NUMBER=your_number
+"""
+}
+
+
+def create_structure():
+
+    if not os.path.exists(PROJECT_NAME):
+        os.mkdir(PROJECT_NAME)
+
+    os.chdir(PROJECT_NAME)
+
+    for folder in folders:
+        os.makedirs(folder, exist_ok=True)
+
+    for file_name, content in files.items():
+
+        directory = os.path.dirname(file_name)
+
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    print("=" * 50)
+    print("RK Health Project Created Successfully")
+    print("=" * 50)
+
+    print("\nFolders Created:\n")
+
+    for folder in folders:
+        print(folder)
+
+    print("\nFiles Created:\n")
+
+    for file in files.keys():
+        print(file)
+
+    print("\nNext Steps\n")
+
+    print("1. python -m venv rkhealth-env")
+
+    print("2. Windows:")
+    print("   rkhealth-env\\Scripts\\activate")
+
+    print("3. Linux/macOS:")
+    print("   source rkhealth-env/bin/activate")
+
+    print("4. pip install -r requirements.txt")
+
+    print("5. Add your API Keys in .env")
+
+    print("6. Start developing.")
+
+
+if __name__ == "__main__":
+    create_structure()

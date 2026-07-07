@@ -1,0 +1,338 @@
+import json
+import os
+from datetime import datetime
+
+
+# ==========================================
+# Cloud Storage Simulation
+# ==========================================
+
+class CloudStorage:
+    def __init__(self, filename="healthcare_database.json"):
+        self.filename = filename
+
+        if not os.path.exists(self.filename):
+            self.data = {
+                "appointments": [],
+                "medications": []
+            }
+            self.save()
+        else:
+            self.load()
+
+    def load(self):
+        with open(self.filename, "r") as file:
+            self.data = json.load(file)
+
+    def save(self):
+        with open(self.filename, "w") as file:
+            json.dump(self.data, file, indent=4)
+
+
+# ==========================================
+# Appointment Management Module
+# ==========================================
+
+class AppointmentManager:
+
+    def __init__(self, storage):
+        self.storage = storage
+
+    def create_appointment(self):
+
+        patient = input("Patient Name: ")
+        doctor = input("Doctor Name: ")
+        title = input("Appointment Title: ")
+        date = input("Date (YYYY-MM-DD): ")
+        time = input("Time (HH:MM): ")
+        notes = input("Visit Notes: ")
+
+        appointment = {
+            "patient": patient,
+            "doctor": doctor,
+            "title": title,
+            "date": date,
+            "time": time,
+            "notes": notes
+        }
+
+        self.storage.data["appointments"].append(appointment)
+        self.storage.save()
+
+        print("\nAppointment Saved Successfully.\n")
+
+    def view_appointments(self):
+
+        print("\n===== Appointments =====")
+
+        if not self.storage.data["appointments"]:
+            print("No appointments found.\n")
+            return
+
+        for i, app in enumerate(self.storage.data["appointments"], start=1):
+
+            print(f"\nAppointment {i}")
+            print("-------------------------")
+            print("Patient :", app["patient"])
+            print("Doctor  :", app["doctor"])
+            print("Title   :", app["title"])
+            print("Date    :", app["date"])
+            print("Time    :", app["time"])
+            print("Notes   :", app["notes"])
+
+
+# ==========================================
+# Medication Reminder Module
+# ==========================================
+
+class MedicationReminder:
+
+    def __init__(self, storage):
+        self.storage = storage
+
+    def add_medication(self):
+
+        patient = input("Patient Name: ")
+        medicine = input("Medicine Name: ")
+        dosage = input("Dosage: ")
+        timing = input("Timing: ")
+        contact = input("Contact Number: ")
+
+        medication = {
+
+            "patient": patient,
+            "medicine": medicine,
+            "dosage": dosage,
+            "timing": timing,
+            "contact": contact,
+            "reminder_sent": False
+
+        }
+
+        self.storage.data["medications"].append(medication)
+        self.storage.save()
+
+        print("\nMedication Added Successfully.\n")
+
+    def send_reminders(self):
+
+        print("\n===== Medication Reminders =====")
+
+        if not self.storage.data["medications"]:
+            print("No medications scheduled.\n")
+            return
+
+        for med in self.storage.data["medications"]:
+
+            print(f"""
+Reminder
+---------
+Patient : {med['patient']}
+Medicine: {med['medicine']}
+Dosage  : {med['dosage']}
+Timing  : {med['timing']}
+SMS sent to: {med['contact']}
+            """)
+
+            med["reminder_sent"] = True
+
+        self.storage.save()
+
+
+# ==========================================
+# AI Health Summary Generator
+# ==========================================
+
+class AIHealthSummary:
+
+    def generate_summary(self, appointment):
+
+        notes = appointment["notes"]
+
+        summary = f"""
+==============================
+AI HEALTH SUMMARY
+==============================
+
+Patient : {appointment['patient']}
+Doctor  : {appointment['doctor']}
+
+Visit Overview
+--------------
+{notes}
+
+Recommendations
+---------------
+• Follow doctor's instructions carefully.
+• Continue prescribed medication.
+• Maintain a healthy lifestyle.
+• Stay hydrated and monitor symptoms.
+
+Follow-up Guidance
+------------------
+Schedule your next appointment if symptoms persist.
+
+Overall Status
+--------------
+Stable condition based on available visit notes.
+"""
+
+        return summary
+
+
+# ==========================================
+# Health Report Generator
+# ==========================================
+
+class HealthReport:
+
+    def __init__(self, storage):
+        self.storage = storage
+        self.ai = AIHealthSummary()
+
+    def generate_report(self):
+
+        print("\n=====================================")
+        print("PATIENT HEALTH REPORT")
+        print("=====================================\n")
+
+        appointments = self.storage.data["appointments"]
+        medications = self.storage.data["medications"]
+
+        if not appointments:
+            print("No patient records found.")
+            return
+
+        for app in appointments:
+
+            print("-----------------------------------")
+            print("Patient :", app["patient"])
+            print("Doctor  :", app["doctor"])
+            print("Visit   :", app["title"])
+            print("Date    :", app["date"])
+            print("Time    :", app["time"])
+
+            print("\nAI Summary")
+            print(self.ai.generate_summary(app))
+
+            patient_meds = [
+                med for med in medications
+                if med["patient"] == app["patient"]
+            ]
+
+            print("Medication Records")
+            print("------------------")
+
+            if patient_meds:
+
+                for med in patient_meds:
+
+                    print(
+                        f"{med['medicine']} | "
+                        f"{med['dosage']} | "
+                        f"{med['timing']}"
+                    )
+
+            else:
+                print("No medications found.")
+
+            print("\nCompliance Indicator")
+
+            if patient_meds:
+
+                completed = sum(
+                    med["reminder_sent"]
+                    for med in patient_meds
+                )
+
+                percentage = (completed / len(patient_meds)) * 100
+
+                print(f"{percentage:.0f}% Reminder Compliance")
+
+            else:
+                print("N/A")
+
+            print("\nReminder History")
+
+            if patient_meds:
+
+                for med in patient_meds:
+
+                    status = (
+                        "Delivered"
+                        if med["reminder_sent"]
+                        else "Pending"
+                    )
+
+                    print(
+                        f"{med['medicine']} : {status}"
+                    )
+
+            print("\n=====================================\n")
+
+
+# ==========================================
+# Dashboard
+# ==========================================
+
+class Dashboard:
+
+    def __init__(self):
+
+        self.storage = CloudStorage()
+
+        self.appointment = AppointmentManager(self.storage)
+        self.medication = MedicationReminder(self.storage)
+        self.report = HealthReport(self.storage)
+
+    def menu(self):
+
+        while True:
+
+            print("""
+====================================
+HEALTHCARE MANAGEMENT SYSTEM
+====================================
+
+1. Create Appointment
+2. View Appointments
+3. Add Medication
+4. Send Medication Reminders
+5. Generate Health Report
+6. Exit
+
+""")
+
+            choice = input("Enter choice: ")
+
+            if choice == "1":
+                self.appointment.create_appointment()
+
+            elif choice == "2":
+                self.appointment.view_appointments()
+
+            elif choice == "3":
+                self.medication.add_medication()
+
+            elif choice == "4":
+                self.medication.send_reminders()
+
+            elif choice == "5":
+                self.report.generate_report()
+
+            elif choice == "6":
+                print("Thank you.")
+                break
+
+            else:
+                print("Invalid Choice.")
+
+
+# ==========================================
+# Main
+# ==========================================
+
+if __name__ == "__main__":
+
+    dashboard = Dashboard()
+    dashboard.menu()
